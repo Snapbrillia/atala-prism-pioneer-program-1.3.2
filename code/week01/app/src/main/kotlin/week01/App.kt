@@ -16,6 +16,20 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import pbandk.ByteArr
 
+
+// import io.iohk.atala.prism.api.*
+// import io.iohk.atala.prism.api.models.AtalaOperationId
+// import io.iohk.atala.prism.api.models.AtalaOperationStatus
+// import io.iohk.atala.prism.api.node.*
+// import io.iohk.atala.prism.crypto.derivation.KeyDerivation
+// import io.iohk.atala.prism.crypto.derivation.MnemonicCode
+// import io.iohk.atala.prism.crypto.keys.ECKeyPair
+// import io.iohk.atala.prism.identity.*
+// import io.iohk.atala.prism.protos.*
+// import kotlinx.coroutines.*
+// import kotlinx.serialization.json.JsonObject
+// import kotlinx.serialization.json.JsonPrimitive
+
 // Waits until an operation is confirmed by the Cardano network.
 // NOTE: Confirmation doesn't necessarily mean that operation was applied.
 // For example, it could be rejected because of an incorrect signature or other reasons.
@@ -47,9 +61,9 @@ fun waitUntilConfirmed(nodePublicApi: NodePublicApi, operationId: AtalaOperation
 // Creates a list of potentially useful keys out of a mnemonic code
 fun prepareKeysFromMnemonic(mnemonic: MnemonicCode, pass: String): Map<String, ECKeyPair> {
     val seed = KeyDerivation.binarySeed(mnemonic, pass)
-    val issuerMasterKeyPair = KeyGenerator.deriveKeyFromFullPath(seed, 0, PrismKeyType.MASTER_KEY, 0)
-    val issuerIssuingKeyPair = KeyGenerator.deriveKeyFromFullPath(seed, 0, PrismKeyType.ISSUING_KEY, 0)
-    val issuerRevocationKeyPair = KeyGenerator.deriveKeyFromFullPath(seed, 0, PrismKeyType.REVOCATION_KEY, 0)
+    val issuerMasterKeyPair = KeyGenerator.deriveKeyFromFullPath(seed, 0, MasterKeyUsage, 0)
+    val issuerIssuingKeyPair = KeyGenerator.deriveKeyFromFullPath(seed, 0, IssuingKeyUsage, 0)
+    val issuerRevocationKeyPair = KeyGenerator.deriveKeyFromFullPath(seed, 0, RevocationKeyUsage, 0)
     return mapOf(
         Pair(PrismDid.DEFAULT_MASTER_KEY_ID, issuerMasterKeyPair),
         Pair(PrismDid.DEFAULT_ISSUING_KEY_ID, issuerIssuingKeyPair),
@@ -129,9 +143,11 @@ fun main() {
         issuerNodePayloadGenerator.keys + (PrismDid.DEFAULT_ISSUING_KEY_ID to issuerKeys[PrismDid.DEFAULT_ISSUING_KEY_ID]?.privateKey!!))
     val issuingKeyInfo =
         PrismKeyInformation(
-            PrismDid.DEFAULT_ISSUING_KEY_ID,
-            PrismKeyType.ISSUING_KEY,
-            issuerKeys[PrismDid.DEFAULT_ISSUING_KEY_ID]?.publicKey!!)
+            DidPublicKey(
+                PrismDid.DEFAULT_ISSUING_KEY_ID,
+                IssuingKeyUsage,
+                issuerKeys[PrismDid.DEFAULT_ISSUING_KEY_ID]?.publicKey!!)
+        )
     // creation of UpdateDid operation
     val addIssuingKeyDidInfo = issuerNodePayloadGenerator.updateDid(
         issuingOperationHash,
@@ -207,9 +223,12 @@ fun main() {
         issuerNodePayloadGenerator.keys + (PrismDid.DEFAULT_REVOCATION_KEY_ID to issuerKeys[PrismDid.DEFAULT_REVOCATION_KEY_ID]?.privateKey!!))
     // Issuer revokes the credential
     val revocationKeyInfo = PrismKeyInformation(
+        DidPublicKey(
             PrismDid.DEFAULT_REVOCATION_KEY_ID,
-            PrismKeyType.REVOCATION_KEY,
+            // PrismKeyType.REVOCATION_KEY,
+            RevocationKeyUsage,
             issuerKeys[PrismDid.DEFAULT_REVOCATION_KEY_ID]?.publicKey!!)
+    )
     // creation of UpdateDID operation
     val addRevocationKeyDidInfo = issuerNodePayloadGenerator.updateDid(
             addIssuingKeyDidInfo.operationHash,
