@@ -25,7 +25,7 @@ repositories {
         url = uri("https://maven.pkg.github.com/input-output-hk/better-parse")
         credentials {
             username = "atala-dev"
-            password = "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"
+            password = System.getenv("PRISM_SDK_PASSWORD")
         }
     }
 }
